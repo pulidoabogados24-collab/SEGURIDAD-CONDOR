@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+/* ============================================================================
+   ControlGuard — Sistema de diseño
+   Estética: centro de operaciones. Negro / gris oscuro / blanco + un color
+   de acción (ámbar de seguridad) sobre fondo oscuro. Sin gradientes
+   decorativos, sin exceso de sombras. Jerarquía por contraste y espacio.
+   ============================================================================ */
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+
+  /* Escala neutra — la base del "centro de operaciones" */
+  --color-ink-950: #0a0b0d;
+  --color-ink-900: #101215;
+  --color-ink-800: #16181d;
+  --color-ink-700: #1f2229;
+  --color-ink-600: #2b2f38;
+  --color-ink-500: #3d424e;
+  --color-ink-400: #5b6270;
+  --color-ink-300: #848c9b;
+  --color-ink-200: #b3b9c4;
+  --color-ink-100: #dde0e5;
+  --color-ink-50:  #f4f5f7;
+
+  /* Color de acción: ámbar de seguridad. Sobrio, no decorativo. */
+  --color-action-600: #b3760f;
+  --color-action-500: #d4900f;
+  --color-action-400: #e8a33d;
+  --color-action-300: #f0bc6c;
+
+  /* Estados operativos */
+  --color-ok-500: #2e9e5b;
+  --color-ok-400: #3fbb70;
+  --color-warn-500: #d4900f;
+  --color-warn-400: #e8a33d;
+  --color-danger-500: #c23b3b;
+  --color-danger-400: #e05252;
+  --color-info-500: #3b7fc2;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--color-ink-950);
+  color: var(--color-ink-50);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--color-action-500);
+  color: var(--color-ink-950);
+}
+
+/* Scrollbar discreto, consistente con el resto del sistema */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-ink-600); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-ink-500); }
+
+/* Utilidades de estado usadas en toda la app operativa */
+.status-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.status-dot--ok { background: var(--color-ok-500); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ok-500) 25%, transparent); }
+.status-dot--warn { background: var(--color-warn-500); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-warn-500) 25%, transparent); }
+.status-dot--danger { background: var(--color-danger-500); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger-500) 25%, transparent); }
+.status-dot--idle { background: var(--color-ink-400); }
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 45%, transparent); }
+  100% { box-shadow: 0 0 0 8px color-mix(in srgb, currentColor 0%, transparent); }
+}
+.status-dot--live {
+  animation: pulse-ring 1.8s ease-out infinite;
+}
