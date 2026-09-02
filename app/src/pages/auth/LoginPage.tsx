@@ -81,8 +81,10 @@ export function LoginPage() {
         </form>
 
         <p className="mt-6 text-center text-xs text-ink-500">
-          Modo demo: superadmin@controlguard.demo · admin@seguridadintegraldemo.com ·
-          carlos.rodriguez@seguridadintegraldemo.com — contraseña Demo2026!
+          Condor Security — contraseña <span className="font-mono">Condor2026!</span>
+          <br />
+          admin@condorsecurity.co · supervisor@condorsecurity.co ·
+          vigilante@condorsecurity.co
         </p>
       </div>
     </div>
