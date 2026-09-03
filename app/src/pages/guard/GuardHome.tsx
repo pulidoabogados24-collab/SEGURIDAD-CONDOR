@@ -25,6 +25,29 @@ function greeting() {
   return 'Buenas noches'
 }
 
+/**
+ * Rango [inicio, fin) del día calendario en Bogotá, expresado en UTC para
+ * usarlo directamente en un filtro de Supabase.
+ *
+ * Por qué existe: Colombia es UTC-5 todo el año (sin horario de verano),
+ * así que una ronda de las 19:00 hora local cae en el día UTC *siguiente*
+ * (00:00 UTC). Comparar contra `new Date().toISOString().slice(0, 10)`
+ * (el día calendario en UTC) hacía que esa ronda fuera invisible para el
+ * vigilante durante todo el día — solo aparecía exactamente a las 7pm,
+ * cuando el reloj UTC por fin cruzaba al día siguiente. Este cálculo usa
+ * el día calendario de Bogotá, no el de UTC.
+ */
+function bogotaDayRangeUtc(): { start: string; end: string } {
+  const BOGOTA_OFFSET_HOURS = 5
+  const bogotaNow = new Date(Date.now() - BOGOTA_OFFSET_HOURS * 60 * 60 * 1000)
+  const y = bogotaNow.getUTCFullYear()
+  const m = bogotaNow.getUTCMonth()
+  const d = bogotaNow.getUTCDate()
+  const start = new Date(Date.UTC(y, m, d, BOGOTA_OFFSET_HOURS, 0, 0))
+  const end = new Date(Date.UTC(y, m, d + 1, BOGOTA_OFFSET_HOURS, 0, 0))
+  return { start: start.toISOString(), end: end.toISOString() }
+}
+
 export function GuardHome() {
   const { profile, signOut } = useAuthStore()
   const navigate = useNavigate()
@@ -54,12 +77,13 @@ export function GuardHome() {
 
   async function load() {
     setLoading(true)
+    const { start, end } = bogotaDayRangeUtc()
     const { data } = await supabase
       .from('route_sessions')
       .select('id, scheduled_at, status, expected_points, completed_points, routes(name, scheduled_time), services(name)')
       .eq('guard_id', profile!.id)
-      .gte('scheduled_at', new Date().toISOString().slice(0, 10))
-      .lt('scheduled_at', new Date(Date.now() + 86400000).toISOString().slice(0, 10))
+      .gte('scheduled_at', start)
+      .lt('scheduled_at', end)
       .order('scheduled_at')
 
     setSessions(
