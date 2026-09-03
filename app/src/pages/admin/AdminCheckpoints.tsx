@@ -200,7 +200,9 @@ export function AdminCheckpoints() {
               <div className="flex items-start justify-between gap-2 border-b border-ink-800 px-4 py-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-ink-50">{p.name}</p>
-                  <p className="truncate text-xs text-ink-500">{p.clientName}</p>
+                  {clients.length > 1 && (
+                    <p className="truncate text-xs text-ink-500">{p.clientName}</p>
+                  )}
                 </div>
                 <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-ink-800 font-mono text-xs font-bold text-action-400">
                   {p.sequence_order}
