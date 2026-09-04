@@ -43,7 +43,6 @@ interface ActivityRow {
 interface LiveRound {
   id: string
   guardName: string
-  serviceName: string
   routeName: string
   completed: number
   expected: number
@@ -104,7 +103,7 @@ export function AdminDashboard() {
       supabase.from('incidents').select('id', { count: 'exact', head: true }).eq('company_id', cid).gte('occurred_at', startYesterday).lt('occurred_at', startToday),
       supabase.from('route_points').select('id', { count: 'exact', head: true }).eq('company_id', cid).eq('is_active', true),
       supabase.from('checkpoint_scans').select('id, scanned_at, result, distance_to_point_meters, route_points(name), guards(user_profiles(full_name))').eq('company_id', cid).order('scanned_at', { ascending: false }).limit(12),
-      supabase.from('route_sessions').select('id, status, completed_points, expected_points, routes(name), services(name), guards(user_profiles(full_name))').eq('company_id', cid).eq('status', 'in_progress'),
+      supabase.from('route_sessions').select('id, status, completed_points, expected_points, routes(name), guards(user_profiles(full_name))').eq('company_id', cid).eq('status', 'in_progress'),
       supabase.from('alerts').select('*').eq('company_id', cid).eq('status', 'open').order('created_at', { ascending: false }).limit(6),
     ])
 
@@ -154,14 +153,12 @@ export function AdminDashboard() {
     setLive(
       (liveRes.data ?? []).map((s) => {
         const route = Array.isArray(s.routes) ? s.routes[0] : s.routes
-        const service = Array.isArray(s.services) ? s.services[0] : s.services
         const g = Array.isArray(s.guards) ? s.guards[0] : s.guards
         const up = g?.user_profiles
         const prof = Array.isArray(up) ? up[0] : up
         return {
           id: s.id,
           guardName: prof?.full_name ?? '—',
-          serviceName: service?.name ?? '—',
           routeName: route?.name ?? '—',
           completed: s.completed_points,
           expected: s.expected_points,
@@ -248,7 +245,7 @@ export function AdminDashboard() {
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium text-ink-50">{r.guardName}</p>
                         <p className="truncate text-xs text-ink-500">
-                          {r.routeName} · {r.serviceName}
+                          {r.routeName}
                         </p>
                       </div>
                       <span className="font-mono text-sm font-bold text-ink-100">
