@@ -14,8 +14,14 @@ interface TodaySession {
   status: string
   expected_points: number
   completed_points: number
-  route: { name: string; scheduled_time: string } | null
-  service: { name: string } | null
+  route: { name: string; scheduled_time: string; end_time: string | null } | null
+}
+
+function formatShiftWindow(startTime?: string, endTime?: string | null): string | null {
+  if (!startTime) return null
+  const start = startTime.slice(0, 5)
+  if (!endTime) return start
+  return `${start} – ${endTime.slice(0, 5)}`
 }
 
 function greeting() {
@@ -80,7 +86,7 @@ export function GuardHome() {
     const { start, end } = bogotaDayRangeUtc()
     const { data } = await supabase
       .from('route_sessions')
-      .select('id, scheduled_at, status, expected_points, completed_points, routes(name, scheduled_time), services(name)')
+      .select('id, scheduled_at, status, expected_points, completed_points, routes(name, scheduled_time, end_time)')
       .eq('guard_id', profile!.id)
       .gte('scheduled_at', start)
       .lt('scheduled_at', end)
@@ -94,7 +100,6 @@ export function GuardHome() {
         expected_points: s.expected_points,
         completed_points: s.completed_points,
         route: Array.isArray(s.routes) ? s.routes[0] : s.routes,
-        service: Array.isArray(s.services) ? s.services[0] : s.services,
       })),
     )
     setLoading(false)
@@ -147,7 +152,6 @@ export function GuardHome() {
           >
             <p className="text-xs font-bold uppercase tracking-wide text-action-400">Ronda en curso</p>
             <p className="mt-1.5 text-xl font-extrabold text-ink-50">{active.route?.name}</p>
-            <p className="mt-1 text-sm text-ink-400">{active.service?.name}</p>
             <div className="mt-4 h-2 overflow-hidden rounded-full bg-ink-700">
               <div className="h-full rounded-full bg-ok-500" style={{ width: `${(active.completed_points / active.expected_points) * 100}%` }} />
             </div>
@@ -159,12 +163,17 @@ export function GuardHome() {
         ) : nextScheduled ? (
           <>
             <div className="rounded-2xl border border-ink-700 bg-ink-900 p-5">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-500">Servicio</p>
-              <p className="mt-1 text-lg font-bold text-ink-50">{nextScheduled.service?.name}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-500">Ronda</p>
+              <p className="mt-1 text-lg font-bold text-ink-50">{nextScheduled.route?.name}</p>
               <div className="mt-3 flex items-center gap-1.5 font-mono text-sm text-ink-300">
                 <IconClock width={14} height={14} />
-                {nextScheduled.route?.scheduled_time?.slice(0, 5)}
+                {formatShiftWindow(nextScheduled.route?.scheduled_time, nextScheduled.route?.end_time)}
               </div>
+              {nextScheduled.route?.end_time && (
+                <p className="mt-1 text-[11px] text-ink-500">
+                  Solo puedes escanear dentro de este horario.
+                </p>
+              )}
             </div>
             <div className="mt-4 rounded-2xl border border-ink-600 bg-ink-900 p-5">
               <p className="text-[10px] font-bold uppercase tracking-wide text-action-400">Próxima ronda</p>
