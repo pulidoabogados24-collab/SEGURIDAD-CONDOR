@@ -9,7 +9,7 @@ import { IconUsers } from '../../components/ui/icons'
 interface LiveRow {
   session_id: string
   guard_name: string
-  service_name: string
+  route_name: string
   status: string
   completed: number
   expected: number
@@ -36,7 +36,7 @@ export function SupervisorOpsCenter() {
   async function load(cid: string) {
     const { data } = await supabase
       .from('route_sessions')
-      .select('id, status, completed_points, expected_points, scheduled_at, started_at, guards(user_profiles(full_name)), services(name)')
+      .select('id, status, completed_points, expected_points, scheduled_at, started_at, guards(user_profiles(full_name)), routes(name)')
       .eq('company_id', cid)
       .gte('scheduled_at', new Date().toISOString().slice(0, 10))
       .order('scheduled_at')
@@ -45,11 +45,11 @@ export function SupervisorOpsCenter() {
       (data ?? []).map((r) => {
         const g = Array.isArray(r.guards) ? r.guards[0] : r.guards
         const p = g && Array.isArray(g.user_profiles) ? g.user_profiles[0] : g?.user_profiles
-        const s = Array.isArray(r.services) ? r.services[0] : r.services
+        const route = Array.isArray(r.routes) ? r.routes[0] : r.routes
         return {
           session_id: r.id,
           guard_name: p?.full_name ?? 'Vigilante',
-          service_name: s?.name ?? 'Servicio',
+          route_name: route?.name ?? 'Ronda',
           status: r.status,
           completed: r.completed_points,
           expected: r.expected_points,
@@ -88,7 +88,7 @@ export function SupervisorOpsCenter() {
                 <tr className="border-b border-ink-800 text-xs uppercase tracking-wide text-ink-500">
                   <th className="px-5 py-3 font-medium">Estado</th>
                   <th className="px-5 py-3 font-medium">Vigilante</th>
-                  <th className="px-5 py-3 font-medium">Servicio</th>
+                  <th className="px-5 py-3 font-medium">Ronda</th>
                   <th className="px-5 py-3 font-medium">Progreso</th>
                   <th className="px-5 py-3 font-medium">Programada</th>
                 </tr>
@@ -102,7 +102,7 @@ export function SupervisorOpsCenter() {
                         <span className={`status-dot status-dot--${info.dot}`} />
                       </td>
                       <td className="px-5 py-3 font-medium text-ink-50">{r.guard_name}</td>
-                      <td className="px-5 py-3 text-ink-300">{r.service_name}</td>
+                      <td className="px-5 py-3 text-ink-300">{r.route_name}</td>
                       <td className="px-5 py-3">
                         <Badge tone={info.tone}>{info.label} · {r.completed}/{r.expected}</Badge>
                       </td>
