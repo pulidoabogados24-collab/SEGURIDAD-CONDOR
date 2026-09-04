@@ -20,6 +20,7 @@ import { AdminReports } from './pages/admin/AdminReports'
 import { AdminCheckpoints } from './pages/admin/AdminCheckpoints'
 import { AdminClients } from './pages/admin/AdminClients'
 import { AdminRounds } from './pages/admin/AdminRounds'
+import { AdminLiveMap } from './pages/admin/AdminLiveMap'
 
 import { SupervisorLayout } from './pages/supervisor/SupervisorLayout'
 import { SupervisorOpsCenter } from './pages/supervisor/SupervisorOpsCenter'
@@ -67,6 +68,7 @@ export default function App() {
         <Route element={<ProtectedRoute allow={['admin']} />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
+            <Route path="mapa" element={<AdminLiveMap />} />
             <Route path="rondas" element={<AdminRounds />} />
             <Route path="puntos" element={<AdminCheckpoints />} />
             <Route path="clientes" element={<AdminClients />} />
@@ -82,6 +84,7 @@ export default function App() {
         <Route element={<ProtectedRoute allow={['supervisor']} />}>
           <Route path="/supervisor" element={<SupervisorLayout />}>
             <Route index element={<SupervisorOpsCenter />} />
+            <Route path="mapa" element={<AdminLiveMap />} />
             <Route path="alertas" element={<SupervisorAlerts />} />
             <Route path="incidencias" element={<SupervisorIncidents />} />
             <Route path="puntos" element={<AdminCheckpoints />} />
