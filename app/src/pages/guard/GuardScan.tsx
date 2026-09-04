@@ -31,6 +31,22 @@ export function GuardScan() {
   const [photo, setPhoto] = useState<Blob | null>(null)
   const [coords, setCoords] = useState<GeolocationCoordinates | null>(null)
 
+  // Bandera síncrona (no de estado) para bloquear detecciones repetidas.
+  // Por qué: la cámara sigue mandando frames del MISMO QR muchas veces por
+  // segundo mientras el vigilante la sostiene apuntando al código. El
+  // callback de decodeFromVideoDevice se dispara en cada frame detectado, y
+  // usar solo `phase` (estado de React) para bloquear no alcanza: el estado
+  // se actualiza de forma asíncrona, así que entre que se detecta el primer
+  // QR y React vuelve a renderizar con phase='processing', ya pasaron varios
+  // frames más con el mismo código — cada uno disparaba su propio
+  // handleDetected() y su propia llamada a register_checkpoint_scan. Eso
+  // producía una ráfaga de escaneos duplicados por segundo (visibles en
+  // checkpoint_scans como decenas de filas 'out_of_sequence' para el mismo
+  // punto) y la pantalla quedaba parpadeando en "Verificando punto…" sin
+  // avanzar nunca a un resultado estable. Con un ref booleano el bloqueo es
+  // inmediato, en el mismo tick, sin esperar al ciclo de renderizado.
+  const detectingRef = useRef(false)
+
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
       (pos) => setCoords(pos.coords),
@@ -40,14 +56,21 @@ export function GuardScan() {
 
     readerRef.current = new BrowserQRCodeReader()
     let stop: (() => void) | undefined
+    let controlsRef: { stop: () => void } | undefined
 
     readerRef.current
       .decodeFromVideoDevice(undefined, videoRef.current!, (result) => {
-        if (result && phase === 'scanning') {
+        if (result && !detectingRef.current) {
+          detectingRef.current = true
+          // Detener la cámara de inmediato: ya no debe seguir leyendo frames
+          // mientras se procesa este escaneo ni mientras se muestra el
+          // resultado en pantalla.
+          controlsRef?.stop()
           void handleDetected(result.getText())
         }
       })
       .then((controls) => {
+        controlsRef = controls
         stop = () => controls.stop()
       })
       .catch(() => setPhase('camera_error'))
@@ -57,7 +80,7 @@ export function GuardScan() {
   }, [])
 
   async function handleDetected(text: string) {
-    if (phase !== 'scanning' || !sessionId || !profile) return
+    if (!sessionId || !profile) return
     setPhase('processing')
 
     const scannedAt = new Date().toISOString()
@@ -90,7 +113,9 @@ export function GuardScan() {
           if (profile.company_id) await runSync(profile.company_id, profile.id)
         }
 
-        const { data: point } = await supabase.from('route_points').select('name').eq('id', data.route_point_id).single()
+        const { data: point } = data.route_point_id
+          ? await supabase.from('route_points').select('name').eq('id', data.route_point_id).single()
+          : { data: null }
 
         setOutcome({
           ok: data.result === 'ok',
@@ -187,7 +212,7 @@ export function GuardScan() {
           <div className="mt-auto space-y-2 pt-6">
             <Button size="lg" className="w-full" onClick={() => navigate(`/guard/ronda/${sessionId}`)}>Continuar</Button>
             {!outcome.ok && (
-              <Button variant="ghost" className="w-full" onClick={() => { setOutcome(null); setPhase('scanning') }}>
+              <Button variant="ghost" className="w-full" onClick={() => window.location.reload()}>
                 Intentar de nuevo
               </Button>
             )}
