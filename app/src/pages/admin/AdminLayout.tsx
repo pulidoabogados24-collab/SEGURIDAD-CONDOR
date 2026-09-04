@@ -13,6 +13,7 @@ import {
 
 const NAV: NavItem[] = [
   { to: '/admin', label: 'Panel', icon: <IconHome width={18} height={18} /> },
+  { to: '/admin/mapa', label: 'Mapa en vivo', icon: <IconMap width={18} height={18} /> },
   { to: '/admin/rondas', label: 'Rondas', icon: <IconMap width={18} height={18} /> },
   { to: '/admin/puntos', label: 'Puntos de control', icon: <IconQr width={18} height={18} /> },
   { to: '/admin/clientes', label: 'Clientes', icon: <IconBuilding width={18} height={18} /> },
@@ -26,6 +27,7 @@ const NAV: NavItem[] = [
 /** Título de la cabecera según la sección activa. */
 const TITLES: Record<string, string> = {
   '/admin': 'Panel de operación',
+  '/admin/mapa': 'Mapa en vivo',
   '/admin/rondas': 'Rondas',
   '/admin/puntos': 'Puntos de control',
   '/admin/clientes': 'Clientes',
