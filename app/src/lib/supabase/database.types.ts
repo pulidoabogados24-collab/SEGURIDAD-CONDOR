@@ -173,7 +173,7 @@ export type Database = {
           qr_code_id: string | null
           received_at: string
           result: Database["public"]["Enums"]["scan_result"]
-          route_point_id: string
+          route_point_id: string | null
           route_session_id: string
           scanned_at: string
           sequence_expected: number
@@ -192,7 +192,7 @@ export type Database = {
           qr_code_id?: string | null
           received_at?: string
           result?: Database["public"]["Enums"]["scan_result"]
-          route_point_id: string
+          route_point_id?: string | null
           route_session_id: string
           scanned_at: string
           sequence_expected: number
@@ -211,7 +211,7 @@ export type Database = {
           qr_code_id?: string | null
           received_at?: string
           result?: Database["public"]["Enums"]["scan_result"]
-          route_point_id?: string
+          route_point_id?: string | null
           route_session_id?: string
           scanned_at?: string
           sequence_expected?: number
@@ -540,6 +540,61 @@ export type Database = {
             columns: ["daily_log_id"]
             isOneToOne: false
             referencedRelation: "daily_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guard_locations: {
+        Row: {
+          accuracy_meters: number | null
+          company_id: string
+          guard_id: string
+          id: string
+          latitude: number
+          longitude: number
+          recorded_at: string
+          route_session_id: string | null
+        }
+        Insert: {
+          accuracy_meters?: number | null
+          company_id: string
+          guard_id: string
+          id?: string
+          latitude: number
+          longitude: number
+          recorded_at?: string
+          route_session_id?: string | null
+        }
+        Update: {
+          accuracy_meters?: number | null
+          company_id?: string
+          guard_id?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          recorded_at?: string
+          route_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guard_locations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guard_locations_guard_id_fkey"
+            columns: ["guard_id"]
+            isOneToOne: false
+            referencedRelation: "guards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guard_locations_route_session_id_fkey"
+            columns: ["route_session_id"]
+            isOneToOne: false
+            referencedRelation: "route_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -946,11 +1001,11 @@ export type Database = {
           company_id: string
           created_at: string
           gps_radius_meters: number | null
-          monthly_fee_cop: number | null
           id: string
           is_active: boolean
           latitude: number | null
           longitude: number | null
+          monthly_fee_cop: number | null
           name: string
           route_id: string
           sequence_order: number
@@ -960,11 +1015,11 @@ export type Database = {
           company_id: string
           created_at?: string
           gps_radius_meters?: number | null
-          monthly_fee_cop?: number | null
           id?: string
           is_active?: boolean
           latitude?: number | null
           longitude?: number | null
+          monthly_fee_cop?: number | null
           name: string
           route_id: string
           sequence_order: number
@@ -974,11 +1029,11 @@ export type Database = {
           company_id?: string
           created_at?: string
           gps_radius_meters?: number | null
-          monthly_fee_cop?: number | null
           id?: string
           is_active?: boolean
           latitude?: number | null
           longitude?: number | null
+          monthly_fee_cop?: number | null
           name?: string
           route_id?: string
           sequence_order?: number
@@ -1106,6 +1161,7 @@ export type Database = {
           company_id: string
           created_at: string
           days_of_week: number[]
+          end_time: string | null
           expected_duration_minutes: number
           id: string
           is_active: boolean
@@ -1119,6 +1175,7 @@ export type Database = {
           company_id: string
           created_at?: string
           days_of_week?: number[]
+          end_time?: string | null
           expected_duration_minutes?: number
           id?: string
           is_active?: boolean
@@ -1132,6 +1189,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           days_of_week?: number[]
+          end_time?: string | null
           expected_duration_minutes?: number
           id?: string
           is_active?: boolean
@@ -1783,6 +1841,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      generate_daily_route_sessions: { Args: never; Returns: number }
       geometry: { Args: { "": string }; Returns: unknown }
       geometry_above: {
         Args: { geom1: unknown; geom2: unknown }
@@ -1943,6 +2002,7 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      purge_old_guard_locations: { Args: never; Returns: undefined }
       register_checkpoint_scan: {
         Args: {
           p_client_event_id: string
@@ -1967,7 +2027,7 @@ export type Database = {
           qr_code_id: string | null
           received_at: string
           result: Database["public"]["Enums"]["scan_result"]
-          route_point_id: string
+          route_point_id: string | null
           route_session_id: string
           scanned_at: string
           sequence_expected: number
@@ -1980,6 +2040,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      route_shift_window: { Args: { p_route_id: string }; Returns: string }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: unknown
@@ -2641,12 +2702,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2670,11 +2731,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2695,11 +2756,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2720,11 +2781,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2737,11 +2798,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
