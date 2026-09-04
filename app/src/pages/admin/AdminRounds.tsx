@@ -18,7 +18,6 @@ interface SessionRow {
   completed_points: number
   compliance_pct: number | null
   routeName: string
-  serviceName: string
   guardName: string
 }
 
@@ -65,7 +64,7 @@ export function AdminRounds() {
     const { data } = await supabase
       .from('route_sessions')
       .select(
-        'id, status, scheduled_at, started_at, finished_at, expected_points, completed_points, compliance_pct, routes(name), services(name), guards(user_profiles(full_name))',
+        'id, status, scheduled_at, started_at, finished_at, expected_points, completed_points, compliance_pct, routes(name), guards(user_profiles(full_name))',
       )
       .eq('company_id', cid)
       .order('scheduled_at', { ascending: false })
@@ -74,7 +73,6 @@ export function AdminRounds() {
     setSessions(
       (data ?? []).map((s) => {
         const route = Array.isArray(s.routes) ? s.routes[0] : s.routes
-        const service = Array.isArray(s.services) ? s.services[0] : s.services
         const g = Array.isArray(s.guards) ? s.guards[0] : s.guards
         const up = g?.user_profiles
         const prof = Array.isArray(up) ? up[0] : up
@@ -88,7 +86,6 @@ export function AdminRounds() {
           completed_points: s.completed_points,
           compliance_pct: s.compliance_pct,
           routeName: route?.name ?? '—',
-          serviceName: service?.name ?? '—',
           guardName: prof?.full_name ?? 'Sin asignar',
         }
       }),
@@ -173,7 +170,7 @@ export function AdminRounds() {
                       <Badge tone={st.tone}>{st.label}</Badge>
                     </div>
                     <p className="mt-1 truncate text-xs text-ink-500">
-                      {s.serviceName} · {s.guardName}
+                      {s.guardName}
                     </p>
                   </div>
 
