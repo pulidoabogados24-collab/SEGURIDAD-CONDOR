@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase/client'
 import { useAuthStore } from '../../lib/stores/auth'
 import { Card } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/Badge'
+import { Button } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { IconMap, IconClock, IconLocation } from '../../components/ui/icons'
 import { SCAN_RESULT_LABELS } from '../../lib/types/domain'
@@ -54,6 +55,9 @@ export function AdminRounds() {
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [scans, setScans] = useState<Record<string, ScanRow[]>>({})
+  const [busyScanId, setBusyScanId] = useState<string | null>(null)
+  const [busyReset, setBusyReset] = useState<string | null>(null)
+  const [toolsError, setToolsError] = useState<string | null>(null)
 
   useEffect(() => {
     if (companyId) void load(companyId)
@@ -131,12 +135,57 @@ export function AdminRounds() {
     }))
   }
 
+  /**
+   * Borra un escaneo puntual (ej. el vigilante se equivocó de punto, o
+   * quedó un registro de prueba). También sirve como forma de "autorizar"
+   * un segundo escaneo del mismo punto: al desaparecer el escaneo 'ok'
+   * anterior, register_checkpoint_scan ya no lo rechaza como duplicado la
+   * próxima vez que el vigilante lo escanee.
+   */
+  async function deleteScan(sessionId: string, scanId: string) {
+    if (!window.confirm('¿Borrar este escaneo? El vigilante podrá volver a escanear este punto.')) return
+    setToolsError(null)
+    setBusyScanId(scanId)
+    const { error } = await supabase.rpc('admin_delete_checkpoint_scan', { p_scan_id: scanId })
+    setBusyScanId(null)
+    if (error) {
+      setToolsError(error.message)
+      return
+    }
+    setScans((prev) => ({ ...prev, [sessionId]: (prev[sessionId] ?? []).filter((s) => s.id !== scanId) }))
+    if (companyId) void load(companyId)
+  }
+
+  /** Reinicia una ronda completa: borra todos sus escaneos y la deja como si no se hubiera hecho. */
+  async function resetSession(sessionId: string) {
+    if (
+      !window.confirm(
+        'Esto borra TODOS los escaneos de esta ronda y la deja como si no se hubiera hecho. ¿Continuar?',
+      )
+    )
+      return
+    setToolsError(null)
+    setBusyReset(sessionId)
+    const { error } = await supabase.rpc('admin_reset_route_session', { p_route_session_id: sessionId })
+    setBusyReset(null)
+    if (error) {
+      setToolsError(error.message)
+      return
+    }
+    setScans((prev) => ({ ...prev, [sessionId]: [] }))
+    if (companyId) void load(companyId)
+  }
+
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
       <h2 className="text-lg font-semibold text-ink-50">Rondas</h2>
       <p className="mt-1 text-sm text-ink-400">
         Historial de rondas. Abre una para ver punto por punto quién escaneó y a qué hora.
       </p>
+
+      {toolsError && (
+        <p className="mt-4 rounded-lg bg-danger-500/10 px-3 py-2 text-sm text-danger-400">{toolsError}</p>
+      )}
 
       {loading ? (
         <p className="mt-8 text-sm text-ink-400">Cargando rondas…</p>
@@ -201,22 +250,33 @@ export function AdminRounds() {
 
                 {isOpen && (
                   <div className="border-t border-ink-800 px-4 py-4 sm:px-5">
-                    <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                      <Meta label="Programada" value={fmtTime(s.scheduled_at)} />
-                      <Meta label="Inicio" value={s.started_at ? fmtTime(s.started_at) : '—'} />
-                      <Meta label="Fin" value={s.finished_at ? fmtTime(s.finished_at) : '—'} />
-                      <Meta
-                        label="Duración"
-                        value={
-                          s.started_at && s.finished_at
-                            ? `${Math.round(
-                                (new Date(s.finished_at).getTime() -
-                                  new Date(s.started_at).getTime()) /
-                                  60000,
-                              )} min`
-                            : '—'
-                        }
-                      />
+                    <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+                      <div className="grid grow grid-cols-2 gap-4 sm:grid-cols-4">
+                        <Meta label="Programada" value={fmtTime(s.scheduled_at)} />
+                        <Meta label="Inicio" value={s.started_at ? fmtTime(s.started_at) : '—'} />
+                        <Meta label="Fin" value={s.finished_at ? fmtTime(s.finished_at) : '—'} />
+                        <Meta
+                          label="Duración"
+                          value={
+                            s.started_at && s.finished_at
+                              ? `${Math.round(
+                                  (new Date(s.finished_at).getTime() -
+                                    new Date(s.started_at).getTime()) /
+                                    60000,
+                                )} min`
+                              : '—'
+                          }
+                        />
+                      </div>
+                      <Button
+                        variant="danger"
+                        size="md"
+                        onClick={() => void resetSession(s.id)}
+                        disabled={busyReset === s.id}
+                        className="shrink-0"
+                      >
+                        {busyReset === s.id ? 'Reiniciando…' : 'Reiniciar ronda'}
+                      </Button>
                     </div>
 
                     {!scans[s.id] ? (
@@ -255,6 +315,14 @@ export function AdminRounds() {
                             <Badge tone={sc.result === 'ok' ? 'ok' : 'danger'}>
                               {SCAN_RESULT_LABELS[sc.result] ?? sc.result}
                             </Badge>
+                            <button
+                              onClick={() => void deleteScan(s.id, sc.id)}
+                              disabled={busyScanId === sc.id}
+                              className="ml-auto shrink-0 text-xs font-medium text-danger-400 hover:text-danger-300 disabled:opacity-50"
+                              title="Borrar este escaneo"
+                            >
+                              {busyScanId === sc.id ? 'Borrando…' : 'Borrar'}
+                            </button>
                           </li>
                         ))}
                       </ul>
