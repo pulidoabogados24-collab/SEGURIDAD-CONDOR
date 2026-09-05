@@ -1,40 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 /* ============================================================================
-   ControlGuard — Sistema de diseño
-   Estética: centro de operaciones. Negro / gris oscuro / blanco + un color
-   de acción (ámbar de seguridad) sobre fondo oscuro. Sin gradientes
-   decorativos, sin exceso de sombras. Jerarquía por contraste y espacio.
+   Seguridad Cóndor — Sistema de diseño
+   Misma identidad de marca que el sitio web institucional: negro profundo +
+   dorado/bronce del logo real, tipografía Oswald (títulos) + Public Sans
+   (cuerpo). El color "de acción" ya no es un ámbar genérico: es el dorado
+   institucional de la marca (ver public/brand/logo-condor.jpg).
    ============================================================================ */
 
 @theme {
-  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Public Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Oswald', 'Arial Narrow', Arial, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, monospace;
 
   /* Escala neutra — la base del "centro de operaciones" */
-  --color-ink-950: #0a0b0d;
-  --color-ink-900: #101215;
-  --color-ink-800: #16181d;
-  --color-ink-700: #1f2229;
-  --color-ink-600: #2b2f38;
-  --color-ink-500: #3d424e;
-  --color-ink-400: #5b6270;
-  --color-ink-300: #848c9b;
-  --color-ink-200: #b3b9c4;
-  --color-ink-100: #dde0e5;
-  --color-ink-50:  #f4f5f7;
+  --color-ink-950: #0b0b0c;
+  --color-ink-900: #14120f;
+  --color-ink-800: #1c1c1f;
+  --color-ink-700: #262622;
+  --color-ink-600: #3a382f;
+  --color-ink-500: #4a4738;
+  --color-ink-400: #9c9887;
+  --color-ink-300: #b3af9e;
+  --color-ink-200: #cdc9ba;
+  --color-ink-100: #e3e0d4;
+  --color-ink-50:  #f3f1ea;
 
-  /* Color de acción: ámbar de seguridad. Sobrio, no decorativo. */
-  --color-action-600: #b3760f;
-  --color-action-500: #d4900f;
-  --color-action-400: #e8a33d;
-  --color-action-300: #f0bc6c;
+  /* Color de acción: dorado institucional de Seguridad Cóndor (del logo real). */
+  --color-action-600: #9c7d1e;
+  --color-action-500: #c9a227;
+  --color-action-400: #d9b74a;
+  --color-action-300: #e0c567;
 
   /* Estados operativos */
   --color-ok-500: #2e9e5b;
   --color-ok-400: #3fbb70;
-  --color-warn-500: #d4900f;
-  --color-warn-400: #e8a33d;
+  --color-warn-500: #c9a227;
+  --color-warn-400: #d9b74a;
   --color-danger-500: #c23b3b;
   --color-danger-400: #e05252;
   --color-info-500: #3b7fc2;
@@ -55,6 +58,11 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
 }
 
 ::selection {
