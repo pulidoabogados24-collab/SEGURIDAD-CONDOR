@@ -46,7 +46,7 @@ if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KE
   // Aviso, no error: la app funciona igual. Sirve para que quien despliegue
   // contra otro proyecto se dé cuenta de que está usando el de respaldo.
   console.warn(
-    'ControlGuard: usando la configuración de Supabase por defecto. ' +
+    'Seguridad Cóndor: usando la configuración de Supabase por defecto. ' +
       'Para apuntar a otro proyecto, define VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY.',
   )
 }
