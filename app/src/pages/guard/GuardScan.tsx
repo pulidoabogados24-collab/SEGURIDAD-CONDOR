@@ -90,7 +90,7 @@ export function GuardScan() {
       // Validar formato UUID básico antes de intentar procesar
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(text)
       if (!isUuid) {
-        setOutcome({ ok: false, message: 'Este código QR no pertenece a ControlGuard.' })
+        setOutcome({ ok: false, message: 'Este código QR no pertenece a Seguridad Cóndor.' })
         setPhase('result')
         return
       }
