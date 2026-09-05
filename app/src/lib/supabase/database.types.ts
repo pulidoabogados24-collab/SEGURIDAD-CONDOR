@@ -1734,6 +1734,14 @@ export type Database = {
             }
             Returns: string
           }
+      admin_delete_checkpoint_scan: {
+        Args: { p_scan_id: string }
+        Returns: undefined
+      }
+      admin_reset_route_session: {
+        Args: { p_route_session_id: string }
+        Returns: undefined
+      }
       create_incident: {
         Args: {
           p_client_event_id: string
