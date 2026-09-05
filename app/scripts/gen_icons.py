@@ -1,85 +1,71 @@
 """
-Genera los iconos PWA de ControlGuard: un glifo geométrico de escudo con un
-punto de control (círculo) en el centro, en la paleta ink-950/action-400 del
-sistema de diseño (ver src/index.css). Sobrio, sin gradientes ni clichés
-decorativos, consistente con la identidad "centro de operaciones".
+Genera los iconos PWA de Seguridad Cóndor a partir del logo real de marca
+(escudo negro/dorado con el cóndor), no de un glifo genérico. Fuente:
+public/brand/logo-condor.jpg (600x600, fondo negro sólido ya integrado al
+diseño del logo, sin transparencia).
+
+- icon-192 / icon-512: el logo tal cual, reescalado.
+- icon-512-maskable: el logo con más margen interno, porque Android recorta
+  maskable icons a un círculo/superellipse y el escudo del logo no debe
+  quedar cortado en las puntas.
+- apple-touch-icon: el logo reescalado a 180px (iOS ya redondea las esquinas
+  solo, no hace falta redondear aquí).
+- favicon: PNG del logo a 64px (se referencia como favicon.png; los
+  navegadores modernos aceptan PNG sin problema).
 """
-from PIL import Image, ImageDraw
+from PIL import Image
 import os
 
-INK_950 = (10, 11, 13, 255)
-ACTION_400 = (232, 163, 61, 255)
-INK_100 = (221, 224, 229, 255)
-
-OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "public", "icons")
+BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
+LOGO_SRC = os.path.join(BASE_DIR, "..", "..", "condor-web", "public", "brand", "logo-condor.jpg")
+OUT_DIR = os.path.join(BASE_DIR, "public", "icons")
 os.makedirs(OUT_DIR, exist_ok=True)
 
-
-def shield_path(size, inset_ratio=0.16):
-    """Puntos de un escudo geométrico simple (pentágono con base curva simulada por polígono)."""
-    w = h = size
-    inset = size * inset_ratio
-    top = inset
-    bottom = size - inset * 1.05
-    left = inset
-    right = size - inset
-    mid_x = size / 2
-    notch_y = top + (bottom - top) * 0.32
-    return [
-        (mid_x, top),
-        (right, notch_y),
-        (right, bottom * 0.62),
-        (mid_x, bottom),
-        (left, bottom * 0.62),
-        (left, notch_y),
-    ]
+INK_950 = (10, 11, 13, 255)
 
 
-def make_icon(size, maskable=False):
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-
-    if maskable:
-        # Maskable: el fondo debe llenar todo el lienzo (zona segura ~40% central)
-        draw.rectangle([0, 0, size, size], fill=INK_950)
-        scale = 0.62
-    else:
-        draw.rounded_rectangle([0, 0, size, size], radius=size * 0.22, fill=INK_950)
-        scale = 0.86
-
-    # Escudo centrado, escalado
-    pts = shield_path(size)
-    cx, cy = size / 2, size / 2
-    scaled = [(cx + (x - cx) * scale, cy + (y - cy) * scale) for x, y in pts]
-
-    stroke_w = max(2, round(size * 0.035))
-    draw.polygon(scaled, outline=ACTION_400, width=stroke_w)
-
-    # Punto de control central (el "checkpoint" — núcleo conceptual del producto)
-    r = size * 0.055
-    draw.ellipse([cx - r, cy - r * 0.4, cx + r, cy + r * 1.6], fill=ACTION_400)
-
+def load_logo():
+    img = Image.open(LOGO_SRC).convert("RGBA")
     return img
 
 
-def make_favicon_svg():
-    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="rgb{INK_950[:3]}"/>
-  <polygon points="32,10 52,22 52,40 32,55 12,40 12,22"
-    fill="none" stroke="rgb{ACTION_400[:3]}" stroke-width="2.4"/>
-  <circle cx="32" cy="33" r="3.6" fill="rgb{ACTION_400[:3]}"/>
-</svg>'''
-    with open(os.path.join(OUT_DIR, "..", "favicon.svg"), "w") as f:
-        f.write(svg)
+def square_canvas(size, bg=INK_950):
+    return Image.new("RGBA", (size, size), bg)
 
 
-# Iconos PWA estándar
-make_icon(192).save(os.path.join(OUT_DIR, "icon-192.png"))
-make_icon(512).save(os.path.join(OUT_DIR, "icon-512.png"))
-# Maskable: Android recorta a un círculo/superellipse, por eso el fondo llena el lienzo
-make_icon(512, maskable=True).save(os.path.join(OUT_DIR, "icon-512-maskable.png"))
-# Apple touch icon
-make_icon(180).save(os.path.join(OUT_DIR, "..", "apple-touch-icon.png"))
-make_favicon_svg()
+def make_icon(logo, size):
+    """Logo ocupando el lienzo completo (ya trae su propio fondo negro)."""
+    resized = logo.resize((size, size), Image.LANCZOS)
+    return resized
 
-print("Iconos generados en", os.path.abspath(OUT_DIR))
+
+def make_maskable_icon(logo, size):
+    """Deja ~20% de margen para que el recorte circular/superellipse de
+    Android no corte las puntas del escudo ni el texto del logo."""
+    canvas = square_canvas(size)
+    inner = round(size * 0.72)
+    resized = logo.resize((inner, inner), Image.LANCZOS)
+    offset = (size - inner) // 2
+    canvas.paste(resized, (offset, offset))
+    return canvas
+
+
+def make_favicon_png(logo, size=64):
+    return logo.resize((size, size), Image.LANCZOS)
+
+
+logo = load_logo()
+
+make_icon(logo, 192).convert("RGB").save(os.path.join(OUT_DIR, "icon-192.png"))
+make_icon(logo, 512).convert("RGB").save(os.path.join(OUT_DIR, "icon-512.png"))
+make_maskable_icon(logo, 512).convert("RGB").save(os.path.join(OUT_DIR, "icon-512-maskable.png"))
+make_icon(logo, 180).convert("RGB").save(os.path.join(BASE_DIR, "public", "apple-touch-icon.png"))
+make_favicon_png(logo, 64).save(os.path.join(BASE_DIR, "public", "favicon.png"))
+
+# También dejamos una copia del logo original a mayor resolución para usarlo
+# dentro de la UI (login, sidebar), no solo como ícono de sistema.
+logo.convert("RGB").resize((256, 256), Image.LANCZOS).save(
+    os.path.join(BASE_DIR, "public", "logo-condor.png")
+)
+
+print("Iconos generados a partir del logo real en", os.path.abspath(OUT_DIR))
