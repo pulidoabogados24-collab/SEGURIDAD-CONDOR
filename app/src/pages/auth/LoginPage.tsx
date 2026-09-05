@@ -30,10 +30,12 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-ink-950 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-action-500 text-lg font-bold text-ink-950">
-            CG
-          </div>
-          <h1 className="text-xl font-semibold text-ink-50">ControlGuard</h1>
+          <img
+            src="/logo-condor.png"
+            alt="Seguridad Cóndor"
+            className="mx-auto mb-4 h-16 w-16 rounded-xl object-cover"
+          />
+          <h1 className="font-display text-xl font-semibold uppercase tracking-wide text-ink-50">Seguridad Cóndor</h1>
           <p className="mt-1 text-sm text-ink-400">Centro de operaciones de seguridad</p>
         </div>
 
@@ -79,13 +81,6 @@ export function LoginPage() {
             Iniciar sesión
           </Button>
         </form>
-
-        <p className="mt-6 text-center text-xs text-ink-500">
-          Condor Security — contraseña <span className="font-mono">Condor2026!</span>
-          <br />
-          admin@condorsecurity.co · supervisor@condorsecurity.co ·
-          vigilante@condorsecurity.co
-        </p>
       </div>
     </div>
   )
