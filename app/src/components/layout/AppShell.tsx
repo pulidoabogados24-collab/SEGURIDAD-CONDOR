@@ -94,11 +94,9 @@ export function AppShell({
   const sidebar = (
     <>
       <div className="flex items-center gap-2.5 border-b border-ink-800 px-5 py-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-action-500 text-sm font-bold text-ink-950">
-          CG
-        </div>
+        <img src="/logo-condor.png" alt="Seguridad Cóndor" className="h-9 w-9 flex-shrink-0 rounded-lg object-cover" />
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-ink-50">ControlGuard</p>
+          <p className="truncate font-display text-sm font-semibold uppercase tracking-wide text-ink-50">Seguridad Cóndor</p>
           <p className="truncate text-[11px] text-ink-500">Control operativo</p>
         </div>
       </div>
