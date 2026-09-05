@@ -107,11 +107,21 @@ export function AdminLiveMap() {
     setLoading(false)
   }
 
+  // Centro de Villavicencio, Meta — donde opera la empresa. El mapa se
+  // ancla aquí SIEMPRE que no haya ningún vigilante activo con ubicación
+  // reciente, en vez de no mostrar ningún mapa (antes, sin nadie en
+  // ronda, esta pantalla no renderizaba el <MapContainer> en absoluto y
+  // solo mostraba un aviso de texto — parecía "el mapa no carga" cuando en
+  // realidad es que no había nada que dibujar todavía).
+  const VILLAVICENCIO: [number, number] = [4.142, -73.626]
+
   const center = useMemo<[number, number]>(() => {
     const withPoints = guardsLive.find((g) => g.points.length > 0)
     const last = withPoints?.points[withPoints.points.length - 1]
-    return last ? [last.lat, last.lng] : [4.142, -73.626] // Villavicencio, Meta
+    return last ? [last.lat, last.lng] : VILLAVICENCIO
   }, [guardsLive])
+
+  const zoom = guardsLive.length > 0 ? 15 : 13
 
   const withoutLocation = useMemo(() => guardsLive.filter((g) => g.points.length === 0).length, [guardsLive])
 
@@ -126,77 +136,87 @@ export function AdminLiveMap() {
         </div>
       </div>
 
-      {loading ? (
-        <p className="mt-8 text-sm text-ink-400">Cargando…</p>
-      ) : guardsLive.length === 0 ? (
-        <div className="mt-8">
-          <EmptyState
-            icon={<IconMap width={32} height={32} />}
-            title="Sin vigilantes en ronda ahora"
-            description="Cuando un vigilante inicie una ronda y comparta su ubicación, aparecerá aquí en tiempo real."
-          />
-        </div>
-      ) : (
-        <div className="mt-4 flex flex-1 flex-col gap-4 lg:flex-row">
-          <Card className="flex-1 overflow-hidden">
-            <MapContainer center={center} zoom={15} style={{ height: '100%', width: '100%', minHeight: 400 }}>
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              {guardsLive.map((g) => {
-                const last = g.points[g.points.length - 1]
-                return (
-                  <div key={g.sessionId}>
-                    <Polyline positions={g.points.map((p) => [p.lat, p.lng])} pathOptions={{ color: '#f59e0b', weight: 3 }} />
-                    <Marker position={[last.lat, last.lng]} icon={guardIcon}>
-                      <Popup>
-                        <strong>{g.guardName}</strong>
-                        <br />
-                        {g.routeName}
-                        <br />
-                        Última posición: {new Date(last.recorded_at).toLocaleTimeString('es-CO')}
-                      </Popup>
-                    </Marker>
-                  </div>
-                )
-              })}
-            </MapContainer>
-          </Card>
+      <div className="mt-4 flex flex-1 flex-col gap-4 lg:flex-row">
+        <Card className="relative flex-1 overflow-hidden">
+          {loading && (
+            <div className="absolute inset-x-0 top-0 z-[1000] bg-ink-950/80 px-3 py-1.5 text-center text-xs text-ink-300">
+              Cargando…
+            </div>
+          )}
+          <MapContainer
+            key={guardsLive.length === 0 ? 'idle' : 'live'}
+            center={center}
+            zoom={zoom}
+            style={{ height: '100%', width: '100%', minHeight: 400 }}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            {guardsLive.map((g) => {
+              const last = g.points[g.points.length - 1]
+              return (
+                <div key={g.sessionId}>
+                  <Polyline positions={g.points.map((p) => [p.lat, p.lng])} pathOptions={{ color: '#f59e0b', weight: 3 }} />
+                  <Marker position={[last.lat, last.lng]} icon={guardIcon}>
+                    <Popup>
+                      <strong>{g.guardName}</strong>
+                      <br />
+                      {g.routeName}
+                      <br />
+                      Última posición: {new Date(last.recorded_at).toLocaleTimeString('es-CO')}
+                    </Popup>
+                  </Marker>
+                </div>
+              )
+            })}
+          </MapContainer>
+        </Card>
 
-          <Card className="w-full shrink-0 overflow-y-auto lg:w-72">
-            <div className="border-b border-ink-800 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-                En ronda ({guardsLive.length})
-              </p>
+        <Card className="w-full shrink-0 overflow-y-auto lg:w-72">
+          {!loading && guardsLive.length === 0 ? (
+            <div className="p-4">
+              <EmptyState
+                icon={<IconMap width={28} height={28} />}
+                title="Sin vigilantes en ronda ahora"
+                description="Cuando un vigilante inicie una ronda y comparta su ubicación, aparecerá aquí en tiempo real. Mientras tanto, el mapa queda centrado en Villavicencio."
+              />
             </div>
-            <div className="divide-y divide-ink-800">
-              {guardsLive.map((g) => {
-                const last = g.points[g.points.length - 1]
-                const minutesAgo = Math.round((Date.now() - new Date(last.recorded_at).getTime()) / 60000)
-                return (
-                  <button
-                    key={g.sessionId}
-                    onClick={() => setSelected(g.sessionId)}
-                    className={`w-full px-4 py-3 text-left ${selected === g.sessionId ? 'bg-ink-800' : ''}`}
-                  >
-                    <p className="text-sm font-semibold text-ink-50">{g.guardName}</p>
-                    <p className="text-xs text-ink-500">{g.routeName}</p>
-                    <p className="mt-1 text-xs text-ink-400">
-                      {minutesAgo <= 1 ? 'Actualizado ahora' : `Hace ${minutesAgo} min`}
-                    </p>
-                  </button>
-                )
-              })}
-            </div>
-            {withoutLocation > 0 && (
-              <p className="border-t border-ink-800 px-4 py-3 text-xs text-ink-500">
-                {withoutLocation} vigilante(s) en ronda sin ubicación reciente (pantalla apagada o sin permiso de GPS).
-              </p>
-            )}
-          </Card>
-        </div>
-      )}
+          ) : (
+            <>
+              <div className="border-b border-ink-800 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                  En ronda ({guardsLive.length})
+                </p>
+              </div>
+              <div className="divide-y divide-ink-800">
+                {guardsLive.map((g) => {
+                  const last = g.points[g.points.length - 1]
+                  const minutesAgo = Math.round((Date.now() - new Date(last.recorded_at).getTime()) / 60000)
+                  return (
+                    <button
+                      key={g.sessionId}
+                      onClick={() => setSelected(g.sessionId)}
+                      className={`w-full px-4 py-3 text-left ${selected === g.sessionId ? 'bg-ink-800' : ''}`}
+                    >
+                      <p className="text-sm font-semibold text-ink-50">{g.guardName}</p>
+                      <p className="text-xs text-ink-500">{g.routeName}</p>
+                      <p className="mt-1 text-xs text-ink-400">
+                        {minutesAgo <= 1 ? 'Actualizado ahora' : `Hace ${minutesAgo} min`}
+                      </p>
+                    </button>
+                  )
+                })}
+              </div>
+              {withoutLocation > 0 && (
+                <p className="border-t border-ink-800 px-4 py-3 text-xs text-ink-500">
+                  {withoutLocation} vigilante(s) en ronda sin ubicación reciente (pantalla apagada o sin permiso de GPS).
+                </p>
+              )}
+            </>
+          )}
+        </Card>
+      </div>
     </div>
   )
 }
