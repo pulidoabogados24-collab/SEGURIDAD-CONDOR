@@ -52,7 +52,7 @@ export function SuperAdminDashboard() {
   return (
     <div className="p-8">
       <h1 className="text-lg font-semibold text-ink-50">Panel SaaS</h1>
-      <p className="mt-1 text-sm text-ink-400">Métricas globales de la plataforma ControlGuard.</p>
+      <p className="mt-1 text-sm text-ink-400">Métricas globales de la plataforma Seguridad Cóndor.</p>
 
       {loading ? (
         <div className="mt-8 text-sm text-ink-400">Cargando métricas…</div>
