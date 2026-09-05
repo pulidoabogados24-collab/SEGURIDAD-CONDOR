@@ -144,7 +144,21 @@ export function GuardScan() {
         })
       }
     } catch (e) {
-      setOutcome({ ok: false, message: e instanceof Error ? e.message : 'No se pudo registrar el punto. Intenta de nuevo.' })
+      // Nota: los errores que devuelve Supabase (PostgrestError) NO son
+      // instancias de `Error` en JavaScript — son objetos planos con un
+      // campo `.message`. El chequeo `e instanceof Error` de abajo fallaba
+      // silenciosamente para esos casos y mostraba siempre el mensaje
+      // genérico, ocultando la causa real (permiso denegado, función no
+      // encontrada, columna inválida, etc.). Ahora se muestra `.message`
+      // venga de donde venga, y solo se usa el genérico si de verdad no
+      // hay ningún mensaje disponible.
+      const raw =
+        e instanceof Error
+          ? e.message
+          : e && typeof e === 'object' && 'message' in e && typeof (e as { message?: unknown }).message === 'string'
+            ? (e as { message: string }).message
+            : null
+      setOutcome({ ok: false, message: raw || 'No se pudo registrar el punto. Intenta de nuevo.' })
     } finally {
       setPhase('result')
     }
