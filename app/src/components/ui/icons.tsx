@@ -72,3 +72,24 @@ export const IconSearch = (p: SVGProps<SVGSVGElement>) => (
 export const IconLogout = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" /></Icon>
 )
+export const IconEdit = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></Icon>
+)
+export const IconTrash = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /></Icon>
+)
+export const IconKey = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><circle cx="8" cy="15" r="4" /><path d="m11 12 9-9" /><path d="m16 7 3 3" /></Icon>
+)
+export const IconRefresh = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="M21 12a9 9 0 1 1-3-6.7" /><path d="M21 4v5h-5" /></Icon>
+)
+export const IconDownload = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="M12 3v12" /><path d="m7 11 5 5 5-5" /><path d="M4 21h16" /></Icon>
+)
+export const IconPower = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="M12 3v9" /><path d="M6.3 6.3a8 8 0 1 0 11.4 0" /></Icon>
+)
+export const IconX = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="M18 6 6 18M6 6l12 12" /></Icon>
+)

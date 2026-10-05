@@ -7,6 +7,8 @@ import { EmptyState } from '../../components/ui/EmptyState'
 import { IconClock, IconWifiOff, IconClipboard, IconLogout } from '../../components/ui/icons'
 import { onSyncStateChange, runSync, type SyncState } from '../../lib/offline/sync'
 import { countPending } from '../../lib/offline/db'
+import { callRpc } from '../../lib/rpc'
+import { notifySessionChanged } from '../../lib/stores/liveLocation'
 
 interface TodaySession {
   id: string
@@ -61,6 +63,8 @@ export function GuardHome() {
   const [loading, setLoading] = useState(true)
   const [sync, setSync] = useState<SyncState>({ syncing: false, pending: 0 })
   const [online, setOnline] = useState(navigator.onLine)
+  const [starting, setStarting] = useState(false)
+  const [startError, setStartError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!profile) return
@@ -103,6 +107,25 @@ export function GuardHome() {
       })),
     )
     setLoading(false)
+  }
+
+  // Al iniciar la ronda se marca «en curso» en el servidor: desde ese instante
+  // el vigilante empieza a compartir su ubicación y el mapa en vivo lo muestra.
+  async function startRound(sessionId: string) {
+    setStartError(null)
+    if (navigator.onLine) {
+      setStarting(true)
+      try {
+        await callRpc('start_route_session', { p_route_session_id: sessionId })
+        notifySessionChanged()
+      } catch (e) {
+        setStartError(e instanceof Error ? e.message : 'No se pudo iniciar la ronda.')
+        setStarting(false)
+        return
+      }
+      setStarting(false)
+    }
+    navigate(`/guard/ronda/${sessionId}`)
   }
 
   async function handleSignOut() {
@@ -179,9 +202,17 @@ export function GuardHome() {
               <p className="text-[10px] font-bold uppercase tracking-wide text-action-400">Próxima ronda</p>
               <p className="mt-1.5 text-xl font-extrabold text-ink-50">{nextScheduled.route?.name}</p>
               <p className="mt-1 text-sm text-ink-400">{nextScheduled.expected_points} puntos</p>
-              <Button className="mt-5 w-full" size="lg" onClick={() => navigate(`/guard/ronda/${nextScheduled.id}`)}>
+              <Button className="mt-5 w-full" size="lg" loading={starting} onClick={() => void startRound(nextScheduled.id)}>
                 Iniciar ronda
               </Button>
+              {startError && (
+                <p role="alert" className="mt-3 text-sm text-danger-400">
+                  {startError}
+                </p>
+              )}
+              <p className="mt-3 text-center text-[11px] text-ink-500">
+                Al iniciar, tu supervisor podrá ver tu ubicación en vivo hasta que finalices la ronda.
+              </p>
             </div>
           </>
         ) : (

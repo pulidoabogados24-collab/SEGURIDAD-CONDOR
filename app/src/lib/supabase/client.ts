@@ -42,6 +42,11 @@ const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim() ||
 const anonKey =
   (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim() || FALLBACK_ANON_KEY
 
+/** Exportados para llamar a las Edge Functions sin leer import.meta.env de nuevo
+ *  (si la variable faltara, esas llamadas apuntarían a "undefined/functions/v1"). */
+export const SUPABASE_URL = url
+export const SUPABASE_ANON_KEY = anonKey
+
 if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
   // Aviso, no error: la app funciona igual. Sirve para que quien despliegue
   // contra otro proyecto se dé cuenta de que está usando el de respaldo.

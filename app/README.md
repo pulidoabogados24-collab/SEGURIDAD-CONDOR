@@ -49,3 +49,29 @@ src/
 scripts/
   gen_icons.py   genera los iconos PWA (public/icons/, favicon.svg, apple-touch-icon.png)
 ```
+
+---
+
+## Gestión desde la app (octubre 2026)
+
+- **Vigilantes** (`/admin/vigilantes`): crear, editar nombre/teléfono/cédula/correo/rondas, cambiar
+  contraseña, desactivar (bloquea el acceso real y cancela sus rondas pendientes) y eliminar
+  (solo si no tiene historial). Backend: función Edge `admin-manage-user`.
+- **Supervisores** (`/admin/usuarios`): las mismas acciones + servicios que supervisan.
+- **Puntos / QR** (`/admin/puntos`, `/supervisor/puntos`): añadir, renombrar, tarifa, regenerar QR,
+  descargar QR, desactivar/reactivar y eliminar (solo sin historial). RPC `create_checkpoint`,
+  `update_checkpoint`, `set_checkpoint_active`, `regenerate_checkpoint_qr`, `delete_checkpoint`.
+- **Ubicación en vivo**: `components/guard/LiveLocationSharer.tsx` está montado en toda la app; al
+  pasar la ronda a «en curso» (`start_route_session`) empieza a enviar la posición (primer envío
+  inmediato + latido cada 15 s) hasta que la ronda termina. `/admin/mapa` la recibe por Realtime.
+- **Realtime** requiere que las tablas estén en la publicación `supabase_realtime` (migración 0031).
+
+### Migraciones
+Las migraciones `0030` y `0031` están en `supabase/migrations`. Algunas migraciones antiguas se
+aplicaron directamente en Supabase y no tienen archivo aquí (0011, 0025–0027, 0029); para
+regenerarlas usa `supabase db pull`. **Pendiente:** `supabase/PENDIENTE_delete_checkpoint.sql`
+(habilita «Eliminar punto»); pégalo en Supabase → SQL Editor y ejecútalo.
+
+### Pruebas visuales
+`npm run build && npx vite preview --port 4173 &` y luego
+`node scripts/visual-check-gestion.cjs` (API simulada; no valida consultas reales).

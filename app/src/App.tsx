@@ -4,6 +4,7 @@ import { useAuthStore } from './lib/stores/auth'
 import { initAutoSync } from './lib/offline/sync'
 import { ProtectedRoute } from './routes/ProtectedRoute'
 import { LoginPage } from './pages/auth/LoginPage'
+import { LiveLocationSharer } from './components/guard/LiveLocationSharer'
 
 import { SuperAdminLayout } from './pages/superadmin/SuperAdminLayout'
 import { SuperAdminDashboard } from './pages/superadmin/SuperAdminDashboard'
@@ -54,6 +55,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <LiveLocationSharer />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<Navigate to="/login" replace />} />

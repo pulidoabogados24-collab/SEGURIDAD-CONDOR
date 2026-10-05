@@ -14,8 +14,20 @@
 // ============================================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
+// CORS: el panel corre en el navegador (otro dominio que Supabase), así que el
+// navegador manda primero una petición OPTIONS de verificación. Sin estas
+// cabeceras esa verificación falla y el botón "Crear" nunca llega a ejecutarse.
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 Deno.serve(async (req: Request) => {
   try {
+    if (req.method === "OPTIONS") {
+      return new Response("ok", { headers: CORS });
+    }
     if (req.method !== "POST") {
       return json({ error: "Método no permitido." }, 405);
     }
@@ -48,7 +60,9 @@ Deno.serve(async (req: Request) => {
     }
 
     const body = await req.json();
-    const { email, password, full_name, phone, document_id, role, company_id, badge_code, default_service_id } = body;
+    const { password, phone, document_id, role, company_id, badge_code, default_service_id } = body;
+    const email = String(body.email ?? "").trim().toLowerCase();
+    const full_name = String(body.full_name ?? "").trim();
 
     if (!email || !password || !full_name || !role) {
       return json({ error: "Faltan campos obligatorios (email, password, full_name, role)." }, 400);
@@ -75,6 +89,13 @@ Deno.serve(async (req: Request) => {
       return json({ error: "No autorizado para crear usuarios." }, 403);
     }
 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return json({ error: "El correo no es válido." }, 400);
+    }
+    if (full_name.length > 120) {
+      return json({ error: "El nombre es demasiado largo." }, 400);
+    }
+
     if (password.length < 8) {
       return json({ error: "La contraseña debe tener al menos 8 caracteres." }, 400);
     }
@@ -93,7 +114,11 @@ Deno.serve(async (req: Request) => {
     });
 
     if (createErr || !created?.user) {
-      return json({ error: createErr?.message ?? "No se pudo crear el usuario." }, 400);
+      const msg = createErr?.message ?? "";
+      if (/already|registered|exists/i.test(msg)) {
+        return json({ error: "Ya existe un usuario con ese correo." }, 409);
+      }
+      return json({ error: msg || "No se pudo crear el usuario." }, 400);
     }
 
     // Si es vigilante, crear también su fila operativa en `guards`.
@@ -130,6 +155,6 @@ Deno.serve(async (req: Request) => {
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { ...CORS, "Content-Type": "application/json" },
   });
 }

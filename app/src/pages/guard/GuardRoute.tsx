@@ -5,12 +5,8 @@ import { useAuthStore } from '../../lib/stores/auth'
 import { Button } from '../../components/ui/Button'
 import { IconChevronLeft, IconClock, IconLocation } from '../../components/ui/icons'
 import { enqueueEvent } from '../../lib/offline/db'
-
-// Cada cuánto se manda una posición al servidor mientras la pantalla de la
-// ronda está abierta. No se manda en cada evento de watchPosition (el GPS
-// puede disparar varias veces por segundo) — eso saturaría la base de datos
-// sin ganar nada en precisión real para "ver por dónde va".
-const LOCATION_PING_INTERVAL_MS = 30_000
+import { callRpc } from '../../lib/rpc'
+import { useLiveLocation, notifySessionChanged } from '../../lib/stores/liveLocation'
 
 interface SessionInfo {
   id: string
@@ -35,68 +31,34 @@ export function GuardRoute() {
   const [session, setSession] = useState<SessionInfo | null>(null)
   const [points, setPoints] = useState<PointInfo[]>([])
   const [lastScan, setLastScan] = useState<{ point_name: string; scanned_at: string } | null>(null)
-  const [locationStatus, setLocationStatus] = useState<'active' | 'denied' | 'unsupported' | 'starting'>('starting')
+  // La ubicación en vivo la comparte <LiveLocationSharer /> (montado en toda la app);
+  // aquí solo se muestra su estado.
+  const locationStatus = useLiveLocation((s) => s.status)
 
   useEffect(() => {
     if (sessionId) void load(sessionId)
   }, [sessionId])
 
-  // Comparte la ubicación en vivo mientras esta pantalla está abierta. En
-  // iPhone (Safari/PWA) el sistema operativo corta el GPS en cuanto se
-  // apaga la pantalla o se cambia de app — no hay forma de evitar eso desde
-  // el código, es una restricción de Apple a las PWA. En Android normalmente
-  // sí puede seguir en segundo plano. Por eso esto vive en un useEffect
-  // ligado al ciclo de vida de la pantalla de la ronda, no a un "servicio"
-  // aparte: technically no existe tal cosa en la web para iOS.
-  useEffect(() => {
-    const guardId = profile?.id
-    const companyId = profile?.company_id
-    if (!sessionId || !guardId || !companyId) return
-    if (!navigator.geolocation) {
-      setLocationStatus('unsupported')
-      return
-    }
-
-    let lastSentAt = 0
-    let cancelled = false
-
-    const watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        if (cancelled) return
-        setLocationStatus('active')
-        const now = Date.now()
-        if (now - lastSentAt < LOCATION_PING_INTERVAL_MS) return
-        lastSentAt = now
-        void supabase.from('guard_locations').insert({
-          company_id: companyId,
-          guard_id: guardId,
-          route_session_id: sessionId,
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-          accuracy_meters: pos.coords.accuracy,
-        })
-      },
-      (err) => {
-        if (cancelled) return
-        setLocationStatus(err.code === err.PERMISSION_DENIED ? 'denied' : 'unsupported')
-      },
-      { enableHighAccuracy: true, maximumAge: 15_000, timeout: 20_000 },
-    )
-
-    return () => {
-      cancelled = true
-      navigator.geolocation.clearWatch(watchId)
-    }
-  }, [sessionId, profile?.id, profile?.company_id])
-
   async function load(sid: string) {
     const { data: s } = await supabase
       .from('route_sessions')
-      .select('id, status, expected_points, completed_points, route_id, routes(name)')
+      .select('id, status, guard_id, expected_points, completed_points, route_id, routes(name)')
       .eq('id', sid)
       .single()
 
     if (!s) return
+
+    // Si se llegó a esta pantalla con la ronda aún «programada» (enlace directo,
+    // por ejemplo), se inicia aquí para que empiece a compartirse la ubicación.
+    if (s.status === 'scheduled' && navigator.onLine && s.guard_id === profile?.id) {
+      try {
+        await callRpc('start_route_session', { p_route_session_id: sid })
+        s.status = 'in_progress'
+        notifySessionChanged()
+      } catch {
+        /* si falla, la pantalla igual carga; el primer escaneo también la inicia */
+      }
+    }
 
     setSession({
       id: s.id, status: s.status, expected_points: s.expected_points, completed_points: s.completed_points,
@@ -104,7 +66,7 @@ export function GuardRoute() {
       route: Array.isArray(s.routes) ? s.routes[0] : s.routes,
     })
 
-    const { data: p } = await supabase.from('route_points').select('id, name, sequence_order').eq('route_id', s.route_id).order('sequence_order')
+    const { data: p } = await supabase.from('route_points').select('id, name, sequence_order').eq('route_id', s.route_id).eq('is_active', true).order('sequence_order')
 
     // Puntos ya registrados con éxito en ESTA sesión — ya no se exige orden,
     // así que "hecho" se calcula por escaneos reales, no por sequence_order.
@@ -135,6 +97,7 @@ export function GuardRoute() {
     } else {
       await enqueueEvent('finish_session', { route_session_id: session.id })
     }
+    notifySessionChanged()
     navigate('/guard')
   }
 
